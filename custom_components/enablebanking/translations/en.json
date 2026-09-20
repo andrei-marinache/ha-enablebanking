@@ -26,7 +26,7 @@
       },
       "auth": {
         "title": "Authorise at your bank",
-        "description": "**[Open this link to authorise at your bank]({auth_url})**\n\nAfter logging in you are redirected to a page on enablebanking.com. Copy the **whole address** out of your browser's address bar and paste it below — it looks like `https://enablebanking.com/?state=...&code=...`. Pasting just the `code` value still works if you prefer.",
+        "description": "**[Open this link to authorise at your bank]({auth_url})**\n\nAfter logging in you are redirected back to Enable Banking. Copy the **whole address** out of your browser's address bar and paste it below: it is the one carrying `state=` and `code=`. Pasting just the `code` value still works if you prefer.",
         "data": {
           "auth_code": "Redirect address (or authorisation code)"
         }

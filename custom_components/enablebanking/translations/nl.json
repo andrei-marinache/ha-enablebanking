@@ -26,7 +26,7 @@
       },
       "auth": {
         "title": "Autoriseer bij je bank",
-        "description": "**[Open deze link om te autoriseren bij je bank]({auth_url})**\n\nNa het inloggen word je doorgestuurd naar een pagina op enablebanking.com. Kopieer het **volledige adres** uit de adresbalk van je browser en plak het hieronder — het ziet eruit als `https://enablebanking.com/?state=...&code=...`. Alleen de waarde van `code` plakken werkt ook.",
+        "description": "**[Open deze link om te autoriseren bij je bank]({auth_url})**\n\nNa het inloggen word je teruggestuurd naar Enable Banking. Kopieer het **volledige adres** uit de adresbalk van je browser en plak het hieronder: dat is het adres met `state=` en `code=` erin. Alleen de waarde van `code` plakken werkt ook.",
         "data": {
           "auth_code": "Omleidingsadres (of autorisatiecode)"
         }
