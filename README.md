@@ -1,9 +1,30 @@
-# Enable Banking for Home Assistant
+<p align="center">
+  <img src="custom_components/enablebanking/brand/icon.png" width="128" alt="">
+</p>
+
+<h1 align="center">Enable Banking for Home Assistant</h1>
+
+<p align="center">
+  Account balances from any bank behind Enable Banking, one config entry per bank.<br>
+  Sensors that keep their last known value instead of going unavailable.
+</p>
+
+<p align="center">
+  <a href="https://my.home-assistant.io/redirect/hacs_repository/?owner=FezVrasta&repository=ha-enablebanking&category=integration">
+    <img src="https://my.home-assistant.io/badges/hacs_repository.svg" alt="Open this repository in HACS">
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://github.com/FezVrasta/ha-enablebanking/actions/workflows/validate.yml/badge.svg" alt="Validate">
+  <img src="https://img.shields.io/badge/HACS-custom-41BDF5.svg" alt="HACS custom repository">
+  <img src="https://img.shields.io/badge/Home%20Assistant-2026.4%2B-41BDF5" alt="Home Assistant 2026.4+">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT">
+</p>
+
+---
 
 > **This is a maintained fork.** The original is [SurfHost/ha-enablebanking](https://github.com/SurfHost/ha-enablebanking). I opened pull requests there with the fixes and features below and got no response, so I'm maintaining this copy instead. It's the one I run at home, and I'll keep fixing and releasing from here. It will diverge from upstream wherever that's the better call, so don't assume the two stay interchangeable. Install from this repo and file issues here, not upstream.
-
-[![Validate](https://github.com/FezVrasta/ha-enablebanking/actions/workflows/validate.yml/badge.svg)](https://github.com/FezVrasta/ha-enablebanking/actions/workflows/validate.yml)
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
 A Home Assistant custom integration that shows account balances from any bank supported by **[Enable Banking](https://enablebanking.com/)** > including ASN Bank, N26, Revolut, Openbank, and hundreds more.
 
