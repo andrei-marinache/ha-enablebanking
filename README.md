@@ -1,6 +1,8 @@
 # Enable Banking for Home Assistant
 
-[![Validate](https://github.com/SurfHost/ha-enablebanking/actions/workflows/validate.yml/badge.svg)](https://github.com/SurfHost/ha-enablebanking/actions/workflows/validate.yml)
+> **This is a maintained fork.** The original is [SurfHost/ha-enablebanking](https://github.com/SurfHost/ha-enablebanking). I opened pull requests there with the fixes and features below and got no response, so I'm maintaining this copy instead. It's the one I run at home, and I'll keep fixing and releasing from here. It will diverge from upstream wherever that's the better call, so don't assume the two stay interchangeable. Install from this repo and file issues here, not upstream.
+
+[![Validate](https://github.com/FezVrasta/ha-enablebanking/actions/workflows/validate.yml/badge.svg)](https://github.com/FezVrasta/ha-enablebanking/actions/workflows/validate.yml)
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
 A Home Assistant custom integration that shows account balances from any bank supported by **[Enable Banking](https://enablebanking.com/)** > including ASN Bank, N26, Revolut, Openbank, and hundreds more.
@@ -50,12 +52,12 @@ A full walkthrough lives at [enablebanking.com/docs/api/quick-start/](https://en
 
 ### HACS (custom repository)
 
-[![Add Repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=SurfHost&repository=ha-enablebanking&category=integration)
+[![Add Repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=FezVrasta&repository=ha-enablebanking&category=integration)
 
 Or manually in HACS:
 
 1. HACS > three-dot menu > **Custom repositories**.
-2. Add `https://github.com/SurfHost/ha-enablebanking` with category **Integration**.
+2. Add `https://github.com/FezVrasta/ha-enablebanking` with category **Integration**.
 3. Search for **Enable Banking** and install it.
 4. Restart Home Assistant.
 
