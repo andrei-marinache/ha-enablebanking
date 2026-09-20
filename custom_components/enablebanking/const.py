@@ -17,7 +17,7 @@ CONF_PSU_TYPE: Final = "psu_type"
 CONF_AUTH_CODE: Final = "auth_code"
 CONF_CONSENT_EXPIRES_AT: Final = "consent_expires_at"
 
-# Fixed scheduled polling at these local hours > four polls/day, aligned
+# Fixed scheduled polling at these local hours: four polls/day, aligned
 # with typical waking life, sitting exactly at the PSD2 4/day cap with
 # regular 4-hour gaps (plus one 12-hour overnight gap).
 POLL_HOURS: Final = (10, 14, 18, 22)

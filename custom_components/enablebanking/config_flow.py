@@ -241,7 +241,7 @@ class EnableBankingConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     # ------------------------------------------------------------------ #
-    # Step 3: bank OAuth + auth code > session_id                          #
+    # Step 3: bank OAuth + auth code to session_id                         #
     # ------------------------------------------------------------------ #
 
     async def async_step_auth(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -468,7 +468,7 @@ class EnableBankingConfigFlow(ConfigFlow, domain=DOMAIN):
             try:
                 await session_client.async_validate()
             except (EnableBankingAuthenticationError, EnableBankingSessionError):
-                pass  # session dead or different app > fall through
+                pass  # session dead or different app, fall through
             except EnableBankingConnectionError:
                 errors["base"] = "cannot_connect"
                 return None
@@ -479,7 +479,7 @@ class EnableBankingConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 _LOGGER.debug(
                     "Smart reauth: credentials validate against existing "
-                    "session %s > skipping bank authorisation",
+                    "session %s, skipping bank authorisation",
                     existing_session_id[:8],
                 )
                 return self.async_update_reload_and_abort(
@@ -635,7 +635,7 @@ def _extract_auth_code(value: str) -> str | None:
     return None
 
 
-# ISO 3166-1 alpha-2 > human name for the EU/EEA + UK + CH.
+# ISO 3166-1 alpha-2 to human name for the EU/EEA + UK + CH.
 # Unknown codes fall back to the raw two-letter code.
 _COUNTRY_NAMES: dict[str, str] = {
     "AT": "Austria",

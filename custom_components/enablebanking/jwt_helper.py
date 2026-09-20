@@ -13,7 +13,7 @@ import time
 
 import jwt as _jwt
 
-JWT_TTL_SECONDS: int = 82800  # 23 h > safely below the 86400 s hard cap
+JWT_TTL_SECONDS: int = 82800  # 23 h, safely below the 86400 s hard cap
 
 
 def mint_jwt(private_key_pem: str, app_id: str) -> str:

@@ -52,7 +52,7 @@ ATTR_ACCOUNT = "account"
 def _register_services(hass: HomeAssistant) -> None:
     """Register the domain-wide ``enablebanking.refresh`` service once.
 
-    Forces an immediate balance poll for every configured entry > handy for
+    Forces an immediate balance poll for every configured entry, handy for
     debugging (you don't need an existing sensor to trigger it) and still
     subject to the bank's PSD2 rate limit.
     """
@@ -134,14 +134,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnableBankingConfigEntry
 
     Startup flow:
     1. Build client + coordinator.
-    2. Hydrate coordinator from disk cache > sensors come up showing their
+    2. Hydrate coordinator from disk cache, so sensors come up showing their
        last known balance, zero API calls.
     3. Forward platforms.
     4. Register scheduled polls at POLL_HOURS (10/14/18/22 local) with
        per-entry minute jitter.
     5. If the cache is older than the most recent scheduled slot that has
        already passed, trigger one catch-up refresh (with 0-60 s jitter to
-       stagger multiple entries). Otherwise do nothing > the next scheduled
+       stagger multiple entries). Otherwise do nothing: the next scheduled
        poll handles it.
     """
     http = async_get_clientsession(hass)

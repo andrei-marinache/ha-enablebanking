@@ -26,7 +26,7 @@
 
 > **This is a maintained fork.** The original is [SurfHost/ha-enablebanking](https://github.com/SurfHost/ha-enablebanking). I opened pull requests there with the fixes and features below and got no response, so I'm maintaining this copy instead. It's the one I run at home, and I'll keep fixing and releasing from here. It will diverge from upstream wherever that's the better call, so don't assume the two stay interchangeable. Install from this repo and file issues here, not upstream.
 
-A Home Assistant custom integration that shows account balances from any bank supported by **[Enable Banking](https://enablebanking.com/)** > including ASN Bank, N26, Revolut, Openbank, and hundreds more.
+A Home Assistant custom integration that shows account balances from any bank supported by **[Enable Banking](https://enablebanking.com/)**, including ASN Bank, N26, Revolut, Openbank, and hundreds more.
 
 Each bank connection is a separate config entry, so you can add as many as you like and see all balances on one dashboard.
 
@@ -34,12 +34,12 @@ The integration uses **Enable Banking** as the licensed TPP (Third Party Provide
 
 ## Features
 
-- One config entry per bank > add ASN Bank, N26, Revolut, Openbank independently
+- One config entry per bank: add ASN Bank, N26, Revolut, Openbank independently
 - Balance sensor per discovered account under each entry
 - Revolut Business supported: select ASPSP "Revolut" with account type "Business"
 - EUR (and other currencies) with `state_class: total`, `device_class: monetary`
 - Attributes per sensor: IBAN, account name, product, currency, balance type, reference date, bank name, `last_polled_at`, `last_error`, `stale`, `consent_expires_at`, `consent_days_remaining`
-- Scheduled polling at fixed local times (10:00, 14:00, 18:00, 22:00) with per-entry minute jitter > exactly four polls/day, aligned with PSD2's cap
+- Scheduled polling at fixed local times (10:00, 14:00, 18:00, 22:00) with per-entry minute jitter, so exactly four polls/day, aligned with PSD2's cap
 - **Never-unavailable sensors**: balances are cached to disk and displayed even during rate-limits, network blips, consent expiry, or the first moment after an HA restart before the first poll runs
 - Graceful 180-day consent expiry: proactive 14-day warning, automatic reauth UI when the consent lapses
 - **Self-renewing API token**: the integration stores your application private key and signs a fresh 23-hour JWT itself, so there is no token to paste and nothing that silently expires
@@ -95,16 +95,16 @@ Or: **Settings > Devices & Services > Add Integration > Enable Banking**.
 
 The config flow has four steps:
 
-1. **Credentials** > paste the full contents of your application's private key (.pem) into the multi-line field and enter the application ID. The flow validates them by minting a JWT and fetching the bank list. On a second or later bank this step is skipped entirely — the key stored by your first entry is reused server-side, so it is never sent back to your browser.
-2. **Country** > pick the country the bank is in. This just filters the (long) bank list.
-3. **Bank** > pick a bank from the dropdown (populated live from Enable Banking's ASPSP list) and select *Personal* or *Business*.
-4. **Authorise** > the flow shows a link to your bank's login page. Click it, log in, and you'll be redirected to `https://enablebanking.com/?state=...&code=...`. Copy the **whole address** out of your browser's address bar and paste it back in HA — the integration pulls the `code` out itself. (Pasting just the `code` value works too.) It then exchanges the code for a session and creates the balance sensors.
+1. **Credentials**: paste the full contents of your application's private key (.pem) into the multi-line field and enter the application ID. The flow validates them by minting a JWT and fetching the bank list. On a second or later bank this step is skipped entirely — the key stored by your first entry is reused server-side, so it is never sent back to your browser.
+2. **Country**: pick the country the bank is in. This just filters the (long) bank list.
+3. **Bank**: pick a bank from the dropdown (populated live from Enable Banking's ASPSP list) and select *Personal* or *Business*.
+4. **Authorise**: the flow shows a link to your bank's login page. Click it, log in, and you'll be redirected to `https://enablebanking.com/?state=...&code=...`. Copy the **whole address** out of your browser's address bar and paste it back in HA — the integration pulls the `code` out itself. (Pasting just the `code` value works too.) It then exchanges the code for a session and creates the balance sensors.
 
 Repeat from the top to add more banks.
 
 ### Revolut Business
 
-Select ASPSP **Revolut** and account type **Business**. Enable Banking uses a single "Revolut" ASPSP entry with a `psu_type` field distinguishing personal and business > not two separate entries.
+Select ASPSP **Revolut** and account type **Business**. Enable Banking uses a single "Revolut" ASPSP entry with a `psu_type` field distinguishing personal and business, not two separate entries.
 
 ## Sensors
 
@@ -216,7 +216,7 @@ The integration polls at four fixed local times per day:
 10:00   14:00   18:00   22:00
 ```
 
-Per-entry minute jitter (deterministic from `entry_id`) staggers banks so they don't hit at `HH:00:00` simultaneously. No interval setting > times are hard-coded, which guarantees you sit exactly at the PSD2 4/day cap regardless of HA restart frequency.
+Per-entry minute jitter (deterministic from `entry_id`) staggers banks so they don't hit at `HH:00:00` simultaneously. No interval setting: times are hard-coded, which guarantees you sit exactly at the PSD2 4/day cap regardless of HA restart frequency.
 
 If HA is down when a scheduled time passes, the coordinator runs one catch-up poll on startup (with 0-60 s jitter). If HA is up but the cache is still within the current schedule window, no startup poll runs at all.
 
@@ -279,12 +279,12 @@ content: >-
 
 PSD2 caps unattended Account Information polling at **4 times per day per consent**. Every HA restart, reload, or manual reconfigure burns one of those slots. If you exceed it the bank responds with `HTTP 429 / ASPSP_RATE_LIMIT_EXCEEDED` (`HUB046` on de Volksbank's API) and refuses further polls until the rolling 24 h window elapses.
 
-Instead of a configurable interval, the integration polls at four fixed local times > `10:00`, `14:00`, `18:00`, `22:00` > hitting the 4/day cap exactly and predictably. No restart can burn extra quota because the cache supplies startup values.
+Instead of a configurable interval, the integration polls at four fixed local times (`10:00`, `14:00`, `18:00`, `22:00`), hitting the 4/day cap exactly and predictably. No restart can burn extra quota because the cache supplies startup values.
 
 ### What the integration does about it
 
-- **Balances persist across HA restarts.** The last successful balance per account is written to `.storage/enablebanking.<entry_id>.cache`. On startup the sensor shows the cached value immediately > no API call is made.
-- **Skip the boot-time poll.** If the cache still sits within the current schedule window, the first post-restart poll is skipped > the next scheduled slot handles it. Catch-up only runs if HA was down during a scheduled slot.
+- **Balances persist across HA restarts.** The last successful balance per account is written to `.storage/enablebanking.<entry_id>.cache`. On startup the sensor shows the cached value immediately, and no API call is made.
+- **Skip the boot-time poll.** If the cache still sits within the current schedule window, the first post-restart poll is skipped: the next scheduled slot handles it. Catch-up only runs if HA was down during a scheduled slot.
 - **Staggered startup.** The catch-up (when it does run) is jittered 0-60 s per entry, so four banks don't all burst at the same second.
 - **Per-account back-off.** If a single account returns 429, that account's next scheduled slot is skipped entirely, then normal cadence resumes. Other accounts under the same bank keep polling.
 - **Sensors never go `unavailable`.** On any failure (rate limit, network, consent expiry, API error) the sensor keeps displaying the last known balance. The `last_error` attribute tells you why the latest attempt failed; the `stale` attribute flips to `true` once the cache is older than 16 hours.

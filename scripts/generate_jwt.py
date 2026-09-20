@@ -14,8 +14,8 @@ Usage:
     python scripts/generate_jwt.py --key key.pem --app-id <UUID> --ttl 2 --copy
 
 Environment variable fallbacks (so you can omit the flags after first use):
-    ENABLEBANKING_KEY       > path to the private key (.pem)
-    ENABLEBANKING_APP_ID    > application UUID from the Enable Banking console
+    ENABLEBANKING_KEY:      path to the private key (.pem)
+    ENABLEBANKING_APP_ID:   application UUID from the Enable Banking console
 
 Requires once:
     pip install "pyjwt[crypto]"
@@ -93,9 +93,7 @@ def build_jwt(key_path: Path, app_id: str, ttl_hours: int) -> str:
     try:
         return jwt.encode(payload, private_key, algorithm="RS256", headers=headers)
     except (ValueError, TypeError) as exc:
-        sys.exit(
-            f"Could not sign JWT > is {key_path} a valid RSA private key in PEM format?\n{exc}"
-        )
+        sys.exit(f"Could not sign JWT. Is {key_path} a valid RSA private key in PEM format?\n{exc}")
 
 
 def copy_to_clipboard(text: str) -> bool:

@@ -232,7 +232,7 @@ def _apply_iban_entity_ids(
 class EnableBankingBalanceSensor(EnableBankingEntity, SensorEntity):
     """Balance sensor for one Enable Banking account.
 
-    Always returns the last known balance > fresh from the coordinator if
+    Always returns the last known balance: fresh from the coordinator if
     the latest poll had it, otherwise from the persistent cache. The sensor
     never goes ``unavailable`` or returns ``unknown`` as long as at least
     one successful poll has ever happened for this account.
@@ -267,7 +267,7 @@ class EnableBankingBalanceSensor(EnableBankingEntity, SensorEntity):
         account = self._current_account
         if account is not None and account.iban:
             return account.iban
-        # No IBAN > unchanged behaviour (device-qualified "Balance …").
+        # No IBAN, so unchanged behaviour (device-qualified "Balance …").
         if account is not None and account.name:
             return f"Balance {account.name}"
         return "Balance"

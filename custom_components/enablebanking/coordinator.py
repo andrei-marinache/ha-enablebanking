@@ -102,7 +102,7 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=None,  # scheduled polling > we drive refresh ourselves
+            update_interval=None,  # scheduled polling, we drive refresh ourselves
         )
         self.client = client
         self.last_refresh: datetime | None = None
@@ -111,8 +111,8 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
         self._cached: dict[str, AccountBalance] = {}
         # Pre-0.6.5 cache entries were keyed by the session uid and carry no
         # stable_id, so they can't seed a (stable_id-keyed) sensor directly.
-        # We hold them here and adopt them on the first poll > which knows the
-        # uid-to-stable_id mapping > so last-known balances survive the upgrade
+        # We hold them here and adopt them on the first poll, which knows the
+        # uid-to-stable_id mapping, so last-known balances survive the upgrade
         # instead of the sensors going unavailable until a fresh poll succeeds.
         self._legacy_by_uid: dict[str, AccountBalance] = {}
         #: Dedup keys of transactions already turned into events, per account.
@@ -156,7 +156,7 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
     def register_scheduled_polls(self) -> list[CALLBACK_TYPE]:
         """Register an ``async_track_time_change`` per POLL_HOUR.
 
-        Returns the unsub callbacks > caller should attach them to
+        Returns the unsub callbacks; caller should attach them to
         ``entry.async_on_unload``.
         """
 
@@ -197,7 +197,7 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
         past = [c for c in candidates if c <= local_now]
         if past:
             return dt_util.as_utc(max(past))
-        # Before today's first slot > most recent is yesterday's last slot
+        # Before today's first slot, most recent is yesterday's last slot
         yesterday_last = (today - timedelta(days=1)).replace(
             hour=POLL_HOURS[-1], minute=self._minute_offset
         )
@@ -333,11 +333,11 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
             return
 
         remaining = jwt_seconds_remaining(self.client._jwt)
-        if remaining > 1800:  # more than 30 min left > nothing to do
+        if remaining > 1800:  # more than 30 min left, nothing to do
             return
 
         _LOGGER.debug(
-            "JWT for entry %s expires in %ds > auto-renewing",
+            "JWT for entry %s expires in %ds, auto-renewing",
             self.config_entry.entry_id,
             remaining,
         )
@@ -355,7 +355,7 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
         _LOGGER.debug("JWT auto-renewed for entry %s", self.config_entry.entry_id)
 
     async def _async_update_data(self) -> EnableBankingData:
-        """Fetch balances. NEVER raises > always returns cached data on error."""
+        """Fetch balances. NEVER raises: always returns cached data on error."""
         await self._async_maybe_renew_jwt()
         now = dt_util.utcnow()
         skip_ids = {
@@ -378,12 +378,12 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
             )
         except EnableBankingAuthenticationError as err:
             self.last_error = "auth"
-            _LOGGER.warning("JWT rejected: %s > triggering reauth", err)
+            _LOGGER.warning("JWT rejected: %s, triggering reauth", err)
             self.config_entry.async_start_reauth(self.hass)
             return self._cached_snapshot()
         except EnableBankingSessionError as err:
             self.last_error = "consent_expired"
-            _LOGGER.warning("Session expired: %s > triggering reauth", err)
+            _LOGGER.warning("Session expired: %s, triggering reauth", err)
             self.config_entry.async_start_reauth(self.hass)
             return self._cached_snapshot()
         except EnableBankingRateLimitError as err:
@@ -493,7 +493,7 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
         for stable_id, account in accounts.items():
             if stable_id in skip_ids or account.rate_limited_until is not None:
                 _LOGGER.debug(
-                    "Skipping transactions for %s > rate-limit back-off active",
+                    "Skipping transactions for %s, rate-limit back-off active",
                     stable_id[:8],
                 )
                 continue
