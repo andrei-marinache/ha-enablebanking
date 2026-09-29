@@ -79,7 +79,7 @@ class TestPagination:
         assert len(result) == 1
         assert client._request.await_count == 1  # type: ignore[attr-defined]
 
-    async def test_stops_at_the_page_cap(self) -> None:
+    async def test_stops_when_the_server_repeats_a_key(self) -> None:
         """A key that never clears must not spin inside one poll.
 
         It would hold the coordinator's update lock and keep spending
@@ -91,10 +91,94 @@ class TestPagination:
         ]
         client = _client(endless)
 
+        result = await client.async_get_transactions("uid", WINDOW_START)
+
+        assert [t["entry_reference"] for t in result] == ["0", "1"]
+        assert client._request.await_count == 2  # type: ignore[attr-defined]
+
+    async def test_stops_at_the_page_cap(self) -> None:
+        """The backstop for a server that keeps minting new keys."""
+        endless = [
+            {"transactions": [{"entry_reference": str(i)}], "continuation_key": f"k{i}"}
+            for i in range(50)
+        ]
+        client = _client(endless)
+
         result = await client.async_get_transactions("uid", WINDOW_START, max_pages=5)
 
         assert len(result) == 5
         assert client._request.await_count == 5  # type: ignore[attr-defined]
+
+    async def test_the_default_cap_covers_a_busy_window(self) -> None:
+        """Twenty-entry pages over a month of card payments need more than 20."""
+        pages = [
+            {
+                "transactions": [{"entry_reference": f"{i}-{j}"} for j in range(20)],
+                "continuation_key": f"k{i}",
+            }
+            for i in range(29)
+        ] + [{"transactions": [{"entry_reference": "last"}]}]
+        client = _client(pages)
+
+        result = await client.async_get_transactions("uid", WINDOW_START)
+
+        assert len(result) == 29 * 20 + 1
+        assert client._request.await_count == 30  # type: ignore[attr-defined]
+
+    async def test_keeps_paging_through_an_empty_page(self) -> None:
+        """Enable Banking: an empty list with a key still has more behind it."""
+        client = _client(
+            [
+                {"transactions": [], "continuation_key": "k1"},
+                {"transactions": [], "continuation_key": "k2"},
+                {"transactions": [{"entry_reference": "a"}]},
+            ]
+        )
+
+        result = await client.async_get_transactions("uid", WINDOW_START)
+
+        assert [t["entry_reference"] for t in result] == ["a"]
+        assert client._request.await_count == 3  # type: ignore[attr-defined]
+
+    async def test_an_entry_repeated_on_a_later_page_is_kept_once(self) -> None:
+        """Otherwise the daily totals would count it twice."""
+        booked = {"entry_reference": "a", "status": "BOOK"}
+        client = _client(
+            [
+                {"transactions": [booked], "continuation_key": "k1"},
+                {"transactions": [dict(booked), {"entry_reference": "b", "status": "BOOK"}]},
+            ]
+        )
+
+        result = await client.async_get_transactions("uid", WINDOW_START)
+
+        assert [t["entry_reference"] for t in result] == ["a", "b"]
+
+    async def test_a_pending_copy_does_not_displace_the_booked_one(self) -> None:
+        client = _client(
+            [
+                {
+                    "transactions": [
+                        {"entry_reference": "a", "status": "PDNG"},
+                        {"entry_reference": "a", "status": "BOOK"},
+                    ]
+                }
+            ]
+        )
+
+        result = await client.async_get_transactions("uid", WINDOW_START)
+
+        assert [t["status"] for t in result] == ["PDNG", "BOOK"]
+
+    async def test_entries_without_a_real_id_are_never_merged(self) -> None:
+        """Two identical id-less entries may well be two identical purchases."""
+        coffee = {"transaction_amount": {"currency": "EUR", "amount": "3.00"}}
+        placeholder = {"entry_reference": "NOTPROVIDED", **coffee}
+        client = _client([{"transactions": [coffee, dict(coffee), placeholder, dict(placeholder)]}])
+
+        result = await client.async_get_transactions("uid", WINDOW_START)
+
+        assert len(result) == 4
 
     async def test_non_dict_entries_are_ignored(self) -> None:
         client = _client([{"transactions": [{"entry_reference": "a"}, "junk", None]}])
