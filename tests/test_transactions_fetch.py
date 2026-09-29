@@ -40,6 +40,16 @@ def _client(pages: list[dict[str, Any]]) -> EnableBankingClient:
     return client
 
 
+def _booked(ref: str, day: str) -> dict[str, Any]:
+    return {
+        "entry_reference": ref,
+        "transaction_amount": {"currency": "EUR", "amount": "5.00"},
+        "credit_debit_indicator": "DBIT",
+        "status": "BOOK",
+        "booking_date": day,
+    }
+
+
 class TestPagination:
     """`continuation_key` is how Enable Banking pages."""
 
@@ -310,6 +320,92 @@ class TestCoordinatorResilience:
 
         fresh = coordinator.data.new_transactions["hash-one"]
         assert [t.key for t in fresh] == ["brand-new"]
+
+    async def test_forgets_keys_that_left_the_window(
+        self,
+        hass: HomeAssistant,
+        entry: MockConfigEntry,
+        account: AccountBalance,
+        enable_custom_integrations: None,
+    ) -> None:
+        """The window bounds the seen-set, so it cannot grow forever."""
+        before_window = (dt_util.now().date() - timedelta(days=120)).isoformat()
+        today = dt_util.now().date().isoformat()
+        client = MagicMock()
+        client.async_get_all_balances = AsyncMock(return_value=({"hash-one": account}, set()))
+        client.async_get_transactions = AsyncMock(
+            return_value=[_booked(f"old-{i}", before_window) for i in range(3)]
+        )
+
+        with patch("custom_components.enablebanking.EnableBankingClient", return_value=client):
+            assert await hass.config_entries.async_setup(entry.entry_id)
+            await hass.async_block_till_done()
+            coordinator = entry.runtime_data
+            await coordinator.async_refresh()
+            await hass.async_block_till_done()
+
+            client.async_get_transactions.return_value = [_booked("new", today)]
+            await coordinator.async_refresh()
+            await hass.async_block_till_done()
+
+        assert coordinator._seen_transactions["hash-one"] == {"new"}
+
+    async def test_a_short_fetch_does_not_refire_an_entry(
+        self,
+        hass: HomeAssistant,
+        entry: MockConfigEntry,
+        account: AccountBalance,
+        enable_custom_integrations: None,
+    ) -> None:
+        """An entry missing from one poll and back on the next is not new."""
+        today = dt_util.now().date()
+        a = _booked("a", (today - timedelta(days=3)).isoformat())
+        b = _booked("b", (today - timedelta(days=2)).isoformat())
+        client = MagicMock()
+        client.async_get_all_balances = AsyncMock(return_value=({"hash-one": account}, set()))
+        client.async_get_transactions = AsyncMock(return_value=[a, b])
+
+        with patch("custom_components.enablebanking.EnableBankingClient", return_value=client):
+            assert await hass.config_entries.async_setup(entry.entry_id)
+            await hass.async_block_till_done()
+            coordinator = entry.runtime_data
+            await coordinator.async_refresh()  # seeds a and b
+            await hass.async_block_till_done()
+
+            client.async_get_transactions.return_value = [b]
+            await coordinator.async_refresh()
+            await hass.async_block_till_done()
+
+            client.async_get_transactions.return_value = [a, b]
+            await coordinator.async_refresh()
+            await hass.async_block_till_done()
+
+        assert coordinator.data is not None
+        assert coordinator.data.new_transactions == {}
+
+    async def test_stores_the_whole_window_without_a_count_cap(
+        self,
+        hass: HomeAssistant,
+        entry: MockConfigEntry,
+        account: AccountBalance,
+        enable_custom_integrations: None,
+    ) -> None:
+        today = dt_util.now().date().isoformat()
+        client = MagicMock()
+        client.async_get_all_balances = AsyncMock(return_value=({"hash-one": account}, set()))
+        client.async_get_transactions = AsyncMock(
+            return_value=[_booked(f"tx-{i}", today) for i in range(1500)]
+        )
+
+        with patch("custom_components.enablebanking.EnableBankingClient", return_value=client):
+            assert await hass.config_entries.async_setup(entry.entry_id)
+            await hass.async_block_till_done()
+            coordinator = entry.runtime_data
+            await coordinator.async_refresh()
+            await hass.async_block_till_done()
+
+        assert len(coordinator.transactions_for("hash-one")) == 1500
+        assert len(coordinator._seen_transactions["hash-one"]) == 1500
 
     async def test_disabled_option_fetches_nothing(
         self,
