@@ -99,7 +99,12 @@ def _register_services(hass: HomeAssistant) -> None:
                 for transaction in coordinator.transactions_for(stable_id):
                     if not transaction.booked and not include_pending:
                         continue
-                    day = transaction.booking_date or transaction.value_date or ""
+                    day = (
+                        transaction.booking_date
+                        or transaction.value_date
+                        or transaction.transaction_date
+                        or ""
+                    )
                     if day and day < cutoff:
                         continue
                     rows.append(
@@ -113,9 +118,15 @@ def _register_services(hass: HomeAssistant) -> None:
                     )
 
         # Newest first, which is the order anyone reading a statement expects.
-        # Pending entries have no booking date yet; their value date places them.
+        # Pending entries have no booking date yet; their value date, or failing
+        # that their transaction date, places them.
         rows.sort(
-            key=lambda row: str(row.get("booking_date") or row.get("value_date") or ""),
+            key=lambda row: str(
+                row.get("booking_date")
+                or row.get("value_date")
+                or row.get("transaction_date")
+                or ""
+            ),
             reverse=True,
         )
         # cast because list is invariant: list[dict[str, JsonValueType]] is not

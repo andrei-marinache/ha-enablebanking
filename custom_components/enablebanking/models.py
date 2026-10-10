@@ -95,6 +95,9 @@ class Transaction:
     counterparty: str | None
     reference: str | None
     bank_transaction_code: str | None
+    #: The only date some banks give a pending card hold. Defaulted so caches
+    #: written before it existed still load.
+    transaction_date: str | None = None
 
     @property
     def signed_amount(self) -> float:
@@ -117,6 +120,7 @@ class Transaction:
             "booking_date": self.booking_date,
             "value_date": self.value_date,
             "bank_transaction_code": self.bank_transaction_code,
+            "transaction_date": self.transaction_date,
         }
 
 
@@ -201,6 +205,7 @@ def transaction_from_raw(raw: dict[str, object]) -> Transaction | None:
         counterparty=_counterparty_name(raw),
         reference=reference,
         bank_transaction_code=code if isinstance(code, str) and code else None,
+        transaction_date=_as_str(raw.get("transaction_date")),
     )
 
 

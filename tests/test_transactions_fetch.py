@@ -593,3 +593,39 @@ class TestGetTransactionsService:
         assert [row["status"] for row in result["transactions"]] == ["pending", "booked"]
         assert result["transactions"][0]["amount"] == 20.0
         assert entry.runtime_data.data.new_transactions == {}
+
+    async def test_hold_with_only_a_transaction_date_is_placed_by_it(
+        self,
+        hass: HomeAssistant,
+        entry: MockConfigEntry,
+        account: AccountBalance,
+        enable_custom_integrations: None,
+    ) -> None:
+        """Some banks date a card hold only by when the card was used."""
+        today = dt_util.now().date()
+        hold = {
+            "entry_reference": "NOTPROVIDED",
+            "transaction_amount": {"currency": "EUR", "amount": "5.00"},
+            "credit_debit_indicator": "DBIT",
+            "status": "PDNG",
+            "transaction_date": today.isoformat(),
+        }
+        await self._setup(
+            hass,
+            entry,
+            account,
+            [self._raw("a", (today - timedelta(days=1)).isoformat()), hold],
+        )
+
+        result = await hass.services.async_call(
+            DOMAIN,
+            "get_transactions",
+            {"include_pending": True},
+            blocking=True,
+            return_response=True,
+        )
+
+        assert result is not None
+        first = result["transactions"][0]
+        assert first["status"] == "pending"
+        assert first["transaction_date"] == today.isoformat()

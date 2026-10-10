@@ -577,7 +577,10 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
             # are replaced on every poll and never reach events or statistics.
             self._transactions[stable_id] = sorted(
                 parsed,
-                key=lambda tx: (tx.booking_date or tx.value_date or "", tx.key),
+                key=lambda tx: (
+                    tx.booking_date or tx.value_date or tx.transaction_date or "",
+                    tx.key,
+                ),
                 reverse=True,
             )
             try:
