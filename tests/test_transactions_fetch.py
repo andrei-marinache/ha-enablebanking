@@ -180,6 +180,17 @@ class TestPagination:
 
         assert [t["status"] for t in result] == ["PDNG", "BOOK"]
 
+    async def test_a_hold_and_its_reversal_sharing_an_id_are_both_kept(self) -> None:
+        """Some banks reuse one id for a hold and the credit that cancels it."""
+        hold = {"entry_reference": "a", "status": "PDNG", "credit_debit_indicator": "DBIT"}
+        client = _client(
+            [{"transactions": [hold, {**hold, "credit_debit_indicator": "CRDT"}, dict(hold)]}]
+        )
+
+        result = await client.async_get_transactions("uid", WINDOW_START)
+
+        assert [t["credit_debit_indicator"] for t in result] == ["DBIT", "CRDT"]
+
     async def test_entries_without_a_real_id_are_never_merged(self) -> None:
         """Two identical id-less entries may well be two identical purchases."""
         coffee = {"transaction_amount": {"currency": "EUR", "amount": "3.00"}}

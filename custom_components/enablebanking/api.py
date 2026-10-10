@@ -312,8 +312,10 @@ class EnableBankingClient:
         # An entry repeated on a later page would be summed twice into the
         # daily totals. Only entries with a real bank id are deduplicated (two
         # identical entries without one may genuinely be two purchases), and
-        # per status, so a pending copy never displaces the booked one.
-        seen_ids: set[tuple[str, str]] = set()
+        # per status, so a pending copy never displaces the booked one, and per
+        # direction, because some banks reuse one id for a card hold and its
+        # reversal.
+        seen_ids: set[tuple[str, str, str]] = set()
 
         for page in range(max_pages):
             data = await self._request("GET", f"/accounts/{account_id}/transactions", params=params)
@@ -327,7 +329,11 @@ class EnableBankingClient:
                     if not isinstance(item, dict):
                         continue
                     if (bank_id := transaction_id(item)) is not None:
-                        identity = (bank_id, str(item.get("status") or ""))
+                        identity = (
+                            bank_id,
+                            str(item.get("status") or ""),
+                            str(item.get("credit_debit_indicator") or ""),
+                        )
                         if identity in seen_ids:
                             continue
                         seen_ids.add(identity)
