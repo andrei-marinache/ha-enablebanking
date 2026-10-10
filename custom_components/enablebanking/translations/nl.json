@@ -122,6 +122,10 @@
         "account": {
           "name": "Rekening",
           "description": "Beperk tot één rekening, op IBAN of op de naam die de bank doorgeeft."
+        },
+        "include_pending": {
+          "name": "Inclusief lopende",
+          "description": "Geef ook posten terug die de bank nog als lopend vermeldt, zoals kaartreserveringen. Elke rij heeft de status booked of pending."
         }
       }
     }

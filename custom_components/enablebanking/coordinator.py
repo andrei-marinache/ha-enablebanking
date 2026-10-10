@@ -484,7 +484,7 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
         return round(total, 2)
 
     def transactions_for(self, stable_id: str) -> list[Transaction]:
-        """The stored window for one account, newest first."""
+        """The stored window for one account, newest first, pending included."""
         return list(self._transactions.get(stable_id, []))
 
     async def _async_fetch_transactions(
@@ -573,8 +573,10 @@ class EnableBankingCoordinator(DataUpdateCoordinator[EnableBankingData]):
             # get_transactions service hands back -- HA can backdate statistics
             # but not states, so a queryable list is the only way to reach the
             # history that predates the integration being switched on.
+            # Pending entries are kept too, for anyone listing card holds; they
+            # are replaced on every poll and never reach events or statistics.
             self._transactions[stable_id] = sorted(
-                (tx for tx in parsed if tx.booked),
+                parsed,
                 key=lambda tx: (tx.booking_date or tx.value_date or "", tx.key),
                 reverse=True,
             )

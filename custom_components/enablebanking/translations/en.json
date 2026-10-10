@@ -122,6 +122,10 @@
         "account": {
           "name": "Account",
           "description": "Limit to one account, by IBAN or by the name the bank reports."
+        },
+        "include_pending": {
+          "name": "Include pending",
+          "description": "Also return entries the bank still lists as pending, such as card holds. Each row carries a status of booked or pending."
         }
       }
     }

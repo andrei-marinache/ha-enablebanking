@@ -47,6 +47,7 @@ SERVICE_GET_TRANSACTIONS = "get_transactions"
 
 ATTR_DAYS = "days"
 ATTR_ACCOUNT = "account"
+ATTR_INCLUDE_PENDING = "include_pending"
 
 
 def _register_services(hass: HomeAssistant) -> None:
@@ -82,6 +83,7 @@ def _register_services(hass: HomeAssistant) -> None:
         """
         days: int = call.data.get(ATTR_DAYS, DEFAULT_TRANSACTION_HISTORY_DAYS)
         wanted_account: str | None = call.data.get(ATTR_ACCOUNT)
+        include_pending: bool = call.data[ATTR_INCLUDE_PENDING]
         cutoff = (dt_util.now().date() - timedelta(days=days - 1)).isoformat()
 
         rows: list[dict[str, JsonValueType]] = []
@@ -95,6 +97,8 @@ def _register_services(hass: HomeAssistant) -> None:
                 if wanted_account and wanted_account not in (account.iban, account.name):
                     continue
                 for transaction in coordinator.transactions_for(stable_id):
+                    if not transaction.booked and not include_pending:
+                        continue
                     day = transaction.booking_date or transaction.value_date or ""
                     if day and day < cutoff:
                         continue
@@ -104,11 +108,16 @@ def _register_services(hass: HomeAssistant) -> None:
                             "iban": account.iban,
                             "account": account.name,
                             **transaction.as_event_payload(),
+                            "status": "booked" if transaction.booked else "pending",
                         }
                     )
 
         # Newest first, which is the order anyone reading a statement expects.
-        rows.sort(key=lambda row: str(row.get("booking_date") or ""), reverse=True)
+        # Pending entries have no booking date yet; their value date places them.
+        rows.sort(
+            key=lambda row: str(row.get("booking_date") or row.get("value_date") or ""),
+            reverse=True,
+        )
         # cast because list is invariant: list[dict[str, JsonValueType]] is not
         # a list[JsonValueType] to the type checker, though every element is one.
         return {"transactions": cast(list[JsonValueType], rows), "count": len(rows)}
@@ -123,6 +132,7 @@ def _register_services(hass: HomeAssistant) -> None:
                     vol.Coerce(int), vol.Range(min=1, max=MAX_TRANSACTION_HISTORY_DAYS)
                 ),
                 vol.Optional(ATTR_ACCOUNT): cv.string,
+                vol.Optional(ATTR_INCLUDE_PENDING, default=False): cv.boolean,
             }
         ),
         supports_response=SupportsResponse.ONLY,

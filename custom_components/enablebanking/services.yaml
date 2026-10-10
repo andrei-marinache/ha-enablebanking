@@ -35,3 +35,12 @@ get_transactions:
       example: NL91ABNA0417164300
       selector:
         text:
+    include_pending:
+      name: Include pending
+      description: >-
+        Also return entries the bank still lists as pending, such as card
+        holds. Each row carries a status of booked or pending.
+      required: false
+      default: false
+      selector:
+        boolean:

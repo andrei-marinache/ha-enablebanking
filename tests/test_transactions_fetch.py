@@ -551,3 +551,45 @@ class TestGetTransactionsService:
         assert result is not None
         assert result["count"] == 1
         client.async_get_transactions.assert_not_awaited()
+
+    async def test_pending_only_on_request(
+        self,
+        hass: HomeAssistant,
+        entry: MockConfigEntry,
+        account: AccountBalance,
+        enable_custom_integrations: None,
+    ) -> None:
+        """Card holds are listed when asked for, and never by default."""
+        today = dt_util.now().date()
+        hold = {
+            "entry_reference": "hold",
+            "transaction_amount": {"currency": "EUR", "amount": "20.00"},
+            "credit_debit_indicator": "DBIT",
+            "status": "PDNG",
+            "value_date": today.isoformat(),
+        }
+        await self._setup(
+            hass,
+            entry,
+            account,
+            [self._raw("a", (today - timedelta(days=1)).isoformat()), hold],
+        )
+
+        default = await hass.services.async_call(
+            DOMAIN, "get_transactions", blocking=True, return_response=True
+        )
+        assert default is not None
+        assert [row["status"] for row in default["transactions"]] == ["booked"]
+
+        result = await hass.services.async_call(
+            DOMAIN,
+            "get_transactions",
+            {"include_pending": True},
+            blocking=True,
+            return_response=True,
+        )
+        assert result is not None
+        # The hold is newer, so its value date sorts it first.
+        assert [row["status"] for row in result["transactions"]] == ["pending", "booked"]
+        assert result["transactions"][0]["amount"] == 20.0
+        assert entry.runtime_data.data.new_transactions == {}
