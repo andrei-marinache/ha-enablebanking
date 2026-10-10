@@ -49,6 +49,17 @@
         "data": {
           "auth_code": "Redirect address (or authorisation code)"
         }
+      },
+      "reconfigure": {
+        "title": "Authorise a new bank session",
+        "description": "Starts a new authorisation at **{aspsp_name}** with the private key already stored. Use it when an account was added at the bank: only the accounts you select there are visible. Balances, history and settings are kept."
+      },
+      "reconfigure_auth": {
+        "title": "Authorise at your bank",
+        "description": "**[Open this link to authorise at your bank]({auth_url})**\n\nSelect every account you want to see, then paste the whole redirect address below, or just the `code` value from it.",
+        "data": {
+          "auth_code": "Redirect address (or authorisation code)"
+        }
       }
     },
     "error": {
@@ -61,7 +72,8 @@
     },
     "abort": {
       "already_configured": "This bank session is already configured",
-      "reauth_successful": "Re-authentication successful, a new bank session is active. Your balances refresh on the next scheduled poll."
+      "reauth_successful": "Re-authentication successful, a new bank session is active. Your balances refresh on the next scheduled poll.",
+      "reconfigure_successful": "A new bank session is active. New accounts appear on the next scheduled poll, or right away with the refresh button."
     }
   },
   "options": {

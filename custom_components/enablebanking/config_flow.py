@@ -513,6 +513,72 @@ class EnableBankingConfigFlow(ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Collect new auth code and update the existing entry."""
+        return await self._async_new_session_step(
+            "reauth_auth", self._get_reauth_entry(), user_input
+        )
+
+    # ------------------------------------------------------------------ #
+    # Reconfigure flow                                                     #
+    # ------------------------------------------------------------------ #
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Authorise a new session at the same bank, on the user's request.
+
+        Which accounts a session covers is decided at the bank, during
+        authorisation, so an account opened later only shows up after a new
+        one. Reauth cannot do it: it only starts once the session has died,
+        and it keeps a session that is still alive.
+        """
+        entry = self._get_reconfigure_entry()
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            stored = self._credentials_from_existing_entries()
+            jwt = self._mint_jwt_or_none(*stored, errors) if stored else None
+            if stored and jwt:
+                self._private_key, self._app_id, self._jwt = *stored, jwt
+                client = EnableBankingClient.for_config_flow(
+                    async_get_clientsession(self.hass), jwt
+                )
+                try:
+                    self._auth_url = await client.async_start_auth(
+                        entry.data.get(CONF_ASPSP_NAME, ""),
+                        entry.data.get(CONF_ASPSP_COUNTRY, ""),
+                        entry.data.get(CONF_PSU_TYPE, PSU_PERSONAL),
+                    )
+                except EnableBankingAuthenticationError:
+                    errors["base"] = "invalid_auth"
+                except EnableBankingConnectionError:
+                    errors["base"] = "cannot_connect"
+                except Exception:
+                    _LOGGER.exception("Unexpected error starting reconfigure")
+                    errors["base"] = "unknown"
+                else:
+                    return await self.async_step_reconfigure_auth()
+            elif not stored:
+                errors["base"] = "invalid_auth"
+
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema({}),
+            description_placeholders={"aspsp_name": entry.data.get(CONF_ASPSP_NAME, "your bank")},
+            errors=errors,
+        )
+
+    async def async_step_reconfigure_auth(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Collect the auth code and swap the entry over to the new session."""
+        return await self._async_new_session_step(
+            "reconfigure_auth", self._get_reconfigure_entry(), user_input
+        )
+
+    async def _async_new_session_step(
+        self, step_id: str, entry: ConfigEntry, user_input: dict[str, Any] | None
+    ) -> ConfigFlowResult:
+        """Turn the auth code into a session and store it on ``entry``."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -529,16 +595,15 @@ class EnableBankingConfigFlow(ConfigFlow, domain=DOMAIN):
                 except EnableBankingConnectionError:
                     errors["base"] = "cannot_connect"
                 except Exception:
-                    _LOGGER.exception("Unexpected error creating session during reauth")
+                    _LOGGER.exception("Unexpected error creating session during %s", step_id)
                     errors["base"] = "unknown"
                 else:
                     session_id = session_data.get("session_id") or session_data.get("uid", "")
                     consent_expires_at: str | None = (session_data.get("access") or {}).get(
                         "valid_until"
                     )
-                    reauth_entry = self._get_reauth_entry()
                     return self.async_update_reload_and_abort(
-                        reauth_entry,
+                        entry,
                         data_updates={
                             CONF_JWT: self._jwt,
                             CONF_PRIVATE_KEY: self._private_key,
@@ -549,7 +614,7 @@ class EnableBankingConfigFlow(ConfigFlow, domain=DOMAIN):
                     )
 
         return self.async_show_form(
-            step_id="reauth_auth",
+            step_id=step_id,
             data_schema=vol.Schema({vol.Required(CONF_AUTH_CODE): str}),
             description_placeholders={"auth_url": self._auth_url},
             errors=errors,

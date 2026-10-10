@@ -49,6 +49,17 @@
         "data": {
           "auth_code": "Omleidingsadres (of autorisatiecode)"
         }
+      },
+      "reconfigure": {
+        "title": "Nieuwe banksessie autoriseren",
+        "description": "Start een nieuwe autorisatie bij **{aspsp_name}** met de al opgeslagen privésleutel. Gebruik dit als er bij de bank een rekening is bijgekomen: alleen de rekeningen die je daar selecteert zijn zichtbaar. Saldi, geschiedenis en instellingen blijven behouden."
+      },
+      "reconfigure_auth": {
+        "title": "Autoriseren bij je bank",
+        "description": "**[Open deze link om bij je bank te autoriseren]({auth_url})**\n\nSelecteer alle rekeningen die je wilt zien en plak daarna het volledige doorstuuradres hieronder, of alleen de waarde van `code`.",
+        "data": {
+          "auth_code": "Doorstuuradres (of autorisatiecode)"
+        }
       }
     },
     "error": {
@@ -61,7 +72,8 @@
     },
     "abort": {
       "already_configured": "Deze banksessie is al geconfigureerd",
-      "reauth_successful": "Opnieuw authenticeren gelukt, er is een nieuwe banksessie actief. Je saldi worden bij de volgende ophaalronde bijgewerkt."
+      "reauth_successful": "Opnieuw authenticeren gelukt, er is een nieuwe banksessie actief. Je saldi worden bij de volgende ophaalronde bijgewerkt.",
+      "reconfigure_successful": "Er is een nieuwe banksessie actief. Nieuwe rekeningen verschijnen bij de volgende geplande ophaling, of meteen via de vernieuwknop."
     }
   },
   "options": {
