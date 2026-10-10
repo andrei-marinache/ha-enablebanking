@@ -12,7 +12,7 @@ from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
     ConfigFlowResult,
-    OptionsFlow,
+    OptionsFlowWithReload,
 )
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -621,8 +621,15 @@ class EnableBankingConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
 
-class EnableBankingOptionsFlow(OptionsFlow):
-    """Settings that change behaviour without re-validating the bank session."""
+class EnableBankingOptionsFlow(OptionsFlowWithReload):
+    """Settings that change behaviour without re-validating the bank session.
+
+    Turning transactions on or off adds or removes the event entities, which
+    only happens on a platform setup, so saving reloads the entry. Only saving
+    options does: the coordinator writes a renewed JWT into the entry's data
+    every day, and reloading on that restarted the entry mid-poll, whose
+    catch-up then polled every account a second time.
+    """
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Configure transaction fetching."""

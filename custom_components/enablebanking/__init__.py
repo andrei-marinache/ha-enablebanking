@@ -205,18 +205,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnableBankingConfigEntry
             coordinator.last_refresh,
         )
 
-    entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
-
     return True
-
-
-async def _async_reload_entry(hass: HomeAssistant, entry: EnableBankingConfigEntry) -> None:
-    """Reload when the options change.
-
-    Turning transactions on or off adds or removes the event entities, which
-    only happens on a platform setup, so the entry has to come back up.
-    """
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: EnableBankingConfigEntry) -> bool:

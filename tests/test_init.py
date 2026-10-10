@@ -21,10 +21,12 @@ from custom_components.enablebanking.const import (
     CONF_ASPSP_COUNTRY,
     CONF_ASPSP_NAME,
     CONF_CONSENT_EXPIRES_AT,
+    CONF_FETCH_TRANSACTIONS,
     CONF_JWT,
     CONF_PRIVATE_KEY,
     CONF_PSU_TYPE,
     CONF_SESSION_ID,
+    CONF_TRANSACTION_HISTORY_DAYS,
     DOMAIN,
     PSU_PERSONAL,
 )
@@ -196,3 +198,44 @@ async def test_refresh_service_polls_every_entry(
         await hass.async_block_till_done()
 
     client.async_get_all_balances.assert_awaited()
+
+
+async def test_a_renewed_jwt_does_not_reload_the_entry(
+    hass: HomeAssistant, entry: MockConfigEntry, client: MagicMock
+) -> None:
+    """The daily JWT renewal writes the entry's data and must leave it running.
+
+    A reload there restarted the entry in the middle of a poll, and the fresh
+    coordinator's catch-up then polled every account a second time.
+    """
+    with patch("custom_components.enablebanking.EnableBankingClient", return_value=client):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        coordinator = entry.runtime_data
+
+        # What the coordinator does when it renews the token.
+        hass.config_entries.async_update_entry(entry, data={**entry.data, CONF_JWT: "d.e.f"})
+        await hass.async_block_till_done()
+
+    assert entry.runtime_data is coordinator
+    client.async_get_all_balances.assert_not_awaited()
+
+
+async def test_saving_options_reloads_the_entry(
+    hass: HomeAssistant, entry: MockConfigEntry, client: MagicMock
+) -> None:
+    """Options still reload: the event entities come and go on a platform setup."""
+    with patch("custom_components.enablebanking.EnableBankingClient", return_value=client):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+        coordinator = entry.runtime_data
+
+        result = await hass.config_entries.options.async_init(entry.entry_id)
+        await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            {CONF_FETCH_TRANSACTIONS: True, CONF_TRANSACTION_HISTORY_DAYS: 30},
+        )
+        await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    assert entry.runtime_data is not coordinator
