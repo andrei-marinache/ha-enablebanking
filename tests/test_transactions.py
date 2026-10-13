@@ -91,6 +91,25 @@ class TestParsing:
         assert tx is not None
         assert tx.booked is False
 
+    @pytest.mark.parametrize(
+        ("overrides", "logged"),
+        [
+            ({"status": "PDNG"}, True),
+            ({"credit_debit_indicator": None}, True),
+            ({}, False),
+        ],
+    )
+    def test_pending_or_undirected_entries_are_logged_without_names(
+        self, caplog: pytest.LogCaptureFixture, overrides: dict[str, Any], logged: bool
+    ) -> None:
+        """A hold that books before anyone looks loses its raw direction for good."""
+        with caplog.at_level("DEBUG", logger="custom_components.enablebanking.models"):
+            transaction_from_raw(raw(**overrides))
+
+        assert ("Pending or undirected" in caplog.text) is logged
+        assert "Albert Heijn" not in caplog.text
+        assert "Groceries" not in caplog.text
+
     def test_debtor_name_used_when_there_is_no_creditor(self) -> None:
         entry = raw(creditor=None, debtor={"name": "Employer BV"})
         tx = transaction_from_raw(entry)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -11,6 +12,20 @@ from datetime import datetime
 #: it ``DRBT`` in one place. Accept both rather than silently booking every
 #: debit as income, which would invert the sign of the whole spending series.
 DEBIT_INDICATORS: frozenset[str] = frozenset({"DBIT", "DRBT"})
+
+_LOGGER = logging.getLogger(__name__)
+
+#: Fields logged for a pending or undirected entry: enough to see which way the
+#: bank meant it, nothing that names a counterparty or an account.
+_DIRECTION_FIELDS: tuple[str, ...] = (
+    "entry_reference",
+    "status",
+    "credit_debit_indicator",
+    "transaction_amount",
+    "booking_date",
+    "value_date",
+    "transaction_date",
+)
 
 #: Berlin Group placeholder some ASPSPs send in ``entry_reference`` instead of
 #: leaving it out, typically on pending entries. Taken at face value it would
@@ -193,13 +208,21 @@ def transaction_from_raw(raw: dict[str, object]) -> Transaction | None:
     code = code_obj.get("description") if isinstance(code_obj, dict) else None
 
     indicator = str(raw.get("credit_debit_indicator") or "").upper()
+    booked = str(raw.get("status") or "").upper() == "BOOK"
+    # A card hold has shown up as a credit, and by the time anyone looks it has
+    # booked and the raw entry is gone. Log what decided the direction.
+    if not booked or indicator not in DEBIT_INDICATORS | {"CRDT"}:
+        _LOGGER.debug(
+            "Pending or undirected transaction: %s",
+            {name: raw.get(name) for name in _DIRECTION_FIELDS},
+        )
 
     return Transaction(
         key=transaction_dedup_key(raw),
         amount=amount,
         currency=str(amount_obj.get("currency") or "EUR"),
         is_debit=indicator in DEBIT_INDICATORS,
-        booked=str(raw.get("status") or "").upper() == "BOOK",
+        booked=booked,
         booking_date=_as_str(raw.get("booking_date")),
         value_date=_as_str(raw.get("value_date")),
         counterparty=_counterparty_name(raw),
